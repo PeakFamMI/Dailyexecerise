@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#060913">
+  <title>Orbit Fitness — Goalkeeper Daily Mission Hub</title>
+
+  <!-- React 18, ReactDOM & Babel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js"></script>
+
+  <!-- Tailwind CSS & FontAwesome Icons -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            space: {
+              950: '#060913',
+              900: '#0b1124',
+              850: '#101935',
+              800: '#162347',
+              700: '#203264',
+              gold: '#f6c344',
+              starlight: '#ffd56b',
+              glow: '#38bdf8',
+              accent: '#818cf8',
+              emerald: '#34d399'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .star-bg {
+      background-image: 
+        radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 100px 150px, #ffd56b, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 220px 80px, #38bdf8, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 300px 240px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 450px 120px, #ffd56b, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 500px 500px;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #203264;
+      border-radius: 9999px;
+    }
+    button, input, select {
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body class="bg-space-950 text-slate-100 min-h-screen font-sans star-bg selection:bg-space-gold selection:text-space-950 antialiased">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- Master Exercise Codex ---
+    const EXERCISE_CODEX = [
+      {
+        id: 'goblet-squat',
+        name: 'Goblet Squat (Kettlebell or Dumbbell)',
+        category: 'goalie',
+        equipment: 'Kettlebell or Dumbbell',
+        desc: 'Hold weight vertically at chest with both hands. Stand shoulder-width apart. Sit hips back and down until thighs are parallel to floor with chest tall, knees tracking toes. Drive through heels to stand.',
+        benefit: 'Powers explosive diving leaps and vertical jumps off the goal line, while strengthening core and knees.',
+        url: 'https://www.youtube.com/results?search_query=how+to+do+a+goblet+squat+for+beginners'
+      },
+      {
+        id: 'kb-deadlift',
+        name: 'Kettlebell Deadlift / Suitcase Deadlift',
+        category: 'goalie',
+        equipment: 'Kettlebell',
+        desc: 'Stand with kettlebell between feet (or beside hip). Hinge at hips pushing butt back with flat spine and soft knees. Grip handle, brace core, and drive through hips to stand tall.',
+        benefit: 'Builds posterior chain (hamstrings & glutes) for sprinting across goalmouth and protects lower back during landings.',
+        url: 'https://www.youtube.com/results?search_query=kettlebell+deadlift+form+beginners'
+      },
+      {
+        id: 'band-pullup',
+        name: 'Band-Assisted Pull-Up / Dead Hang',
+        category: 'upper',
+        equipment: 'Pull-up Bar & Resistance Band',
+        desc: 'Loop heavy band over pullup bar, place foot/knee in loop. Grip bar shoulder-width, pull chest toward bar driving elbows down. Or dead hang for 15-30s with active shoulders.',
+        benefit: 'Essential for goalkeepers! Builds grip, forearm, and back strength to safely pull down high crosses out of the air.',
+        url: 'https://www.youtube.com/results?search_query=band+assisted+pull+up+for+beginners'
+      },
+      {
+        id: 'lateral-bounds',
+        name: 'Lateral Bounds (Skater Jumps)',
+        category: 'goalie',
+        equipment: 'Bodyweight / Floor',
+        desc: 'Stand in quarter-squat on one leg. Push off explosively sideways, land softly on opposite foot absorbing impact in athletic stance, stick landing for 1s, then leap back.',
+        benefit: 'Directly trains lateral push-off power to make diving saves across the net mouth and stick balanced landings.',
+        url: 'https://www.youtube.com/results?search_query=skater+jumps+exercise+form'
+      },
+      {
+        id: 'deadbug',
+        name: 'Deadbug (Pilates Mat)',
+        category: 'core',
+        equipment: 'Bodyweight / Floor Mat',
+        desc: 'Lie on back, arms pointing up, knees in 90-degree tabletop. Glue lower back to floor. Slowly lower opposite arm and leg toward floor, return, and alternate.',
+        benefit: 'Teaches deep core anti-extension bracing to absorb collisions in crowded penalty boxes and generate long goal kicks.',
+        url: 'https://www.youtube.com/results?search_query=deadbug+exercise+for+beginners'
+      },
+      {
+        id: 'bird-dog',
+        name: 'Bird-Dog (Pilates Mat)',
+        category: 'core',
+        equipment: 'Bodyweight / Floor Mat',
+        desc: 'On hands and knees, spine neutral. Smoothly extend right arm forward and left leg straight back without tilting hips. Hold 2 seconds, switch sides.',
+        benefit: 'Builds rotational control, shoulder stabilization, and balance when landing or pivoting on uneven grass.',
+        url: 'https://www.youtube.com/results?search_query=bird+dog+exercise+form'
+      },
+      {
+        id: 'monster-walks',
+        name: 'Resistance Band Monster Walks',
+        category: 'goalie',
+        equipment: 'Resistance Bands',
+        desc: 'Place band around ankles or above knees. Drop into goalkeeper ready stance. Take controlled, wide diagonal and lateral steps keeping continuous tension.',
+        benefit: 'Fires glute medius and hip stabilizers for lightning-fast lateral shuffle speed across the goal line and ACL protection.',
+        url: 'https://www.youtube.com/results?search_query=resistance+band+monster+walk'
+      },
+      {
+        id: 'db-bench-press',
+        name: 'Dumbbell Bench Press',
+        category: 'upper',
+        equipment: 'Bench & Adjustable Dumbbells',
+        desc: 'Lie flat on bench, hold dumbbells at chest height with elbows at 45-degree angle. Press weights smoothly up until arms extend, lower with control.',
+        benefit: 'Builds chest, triceps, and pushing power to punch balls clear off crosses and hold position against attackers.',
+        url: 'https://www.youtube.com/results?search_query=dumbbell+bench+press+form+for+beginners'
+      },
+      {
+        id: 'db-row',
+        name: 'Single-Arm Dumbbell Row',
+        category: 'upper',
+        equipment: 'Bench & Adjustable Dumbbells',
+        desc: 'One knee and hand on bench for support, flat back. Pull dumbbell from hanging position up to hip pocket squeezing shoulder blade, lower slowly.',
+        benefit: 'Balances pressing muscles, strengthens throwing arm for distributing long balls, and reinforces upright posture.',
+        url: 'https://www.youtube.com/results?search_query=dumbbell+single+arm+row+form'
+      },
+      {
+        id: 'wall-ball',
+        name: 'Reaction Wall Ball Bounce',
+        category: 'goalie',
+        equipment: 'Tennis Ball or Soccer Ball',
+        desc: 'Stand 5 feet from wall in goalie ready stance. Throw ball against wall at varying speeds/angles, reacting instantly to catch with soft, secure hands.',
+        benefit: 'Sharpens visual tracking, reaction speed, and soft hands for catching deflections and hard shots.',
+        url: 'https://www.youtube.com/results?search_query=goalkeeper+reaction+drills+at+home'
+      },
+      {
+        id: 'worlds-greatest-stretch',
+        name: "World's Greatest Stretch",
+        category: 'flexibility',
+        equipment: 'Bodyweight / Floor Mat',
+        desc: 'Step into deep lunge with both hands inside front foot. Drop inside elbow toward ankle, rotate torso reaching hand to ceiling, then push hips back into hamstring stretch.',
+        benefit: 'Unlocks tight hips, groin, and thoracic spine—crucial flexibility for making split saves and acrobatic dives.',
+        url: 'https://www.youtube.com/results?search_query=worlds+greatest+stretch+demonstration'
+      },
+      {
+        id: 'treadmill-incline',
+        name: 'Treadmill Incline Power Walk',
+        category: 'flexibility',
+        equipment: 'Treadmill',
+        desc: 'Set treadmill to 3% to 6% incline at brisk walking pace (3.0-3.5 mph). Walk tall, driving through heels and swinging arms naturally without holding rails.',
+        benefit: 'Builds cardiovascular stamina and posterior chain endurance with zero joint pounding, boosting recovery.',
+        url: 'https://www.youtube.com/results?search_query=incline+walking+treadmill+benefits'
+      },
+      {
+        id: 'kb-swings',
+        name: 'Kettlebell Russian Swings',
+        category: 'goalie',
+        equipment: 'Kettlebell',
+        desc: 'Stand feet shoulder-width, hike kettlebell back between legs with flat back. Snap hips forward explosively to float bell to chest height, guide it back into hinge.',
+        benefit: 'Rapid hip snap powers vertical jumping height to tip high balls over the crossbar and sprint explosively.',
+        url: 'https://www.youtube.com/results?search_query=how+to+do+kettlebell+swing+safely+beginner'
+      },
+      {
+        id: 'clamshells',
+        name: 'Pilates Clamshells & Leg Lifts',
+        category: 'core',
+        equipment: 'Resistance Bands or Bodyweight',
+        desc: 'Lie on side, knees bent 90 degrees. Keep feet together and open top knee like a clamshell without rolling hips back. Follow with straight-leg side raises.',
+        benefit: 'Strengthens outer hips to stabilize planting leg during goal kicks and protects against hip impingement.',
+        url: 'https://www.youtube.com/results?search_query=pilates+clamshell+and+side+leg+raise'
+      },
+      {
+        id: 'plank',
+        name: 'Forearm Plank & Side Planks',
+        category: 'core',
+        equipment: 'Bodyweight / Floor Mat',
+        desc: 'Hold body straight on forearms and toes, pulling navel in and squeezing glutes. For side plank, balance on one forearm with stacked feet.',
+        benefit: 'Develops rigid 360-degree core stiffness to resist impact during collisions in the penalty area.',
+        url: 'https://www.youtube.com/results?search_query=how+to+hold+a+proper+plank+beginner'
+      },
+      {
+        id: 'band-face-pulls',
+        name: 'Resistance Band Face Pulls',
+        category: 'upper',
+        equipment: 'Resistance Bands',
+        desc: 'Anchor band at eye level or overhead. Pull hands toward face/ears with high elbows, squeezing rear shoulder blades together at end range.',
+        benefit: 'Strengthens rear shoulders and rotator cuffs to protect shoulders when catching high shots or landing.',
+        url: 'https://www.youtube.com/results?search_query=resistance+band+face+pulls+exercise'
+      },
+      {
+        id: 'glute-bridge',
+        name: 'Glute Bridges & Single-Leg March',
+        category: 'core',
+        equipment: 'Bodyweight / Floor Mat',
+        desc: 'Lie on back, feet flat near hips. Drive through heels to lift hips in line with knees, squeezing glutes for 2 seconds. Alternate lifting one foot slightly.',
+        benefit: 'Activates dormant glute muscles, improving sprint acceleration out of the goal to stop breakaways.',
+        url: 'https://www.youtube.com/results?search_query=how+to+do+a+glute+bridge+properly'
+      },
+      {
+        id: 'cat-cow',
+        name: "Cat-Cow & Child's Pose Spinal Flow",
+        category: 'flexibility',
+        equipment: 'Bodyweight / Floor Mat',
+        desc: "Flow between arching back down with chin up (Cow) and rounding spine up tucking chin (Cat). Follow by pushing hips back onto heels into Child's Pose.",
+        benefit: 'Restores spinal fluidity, eases lower back stiffness after turf dives, and calms the nervous system.',
+        url: 'https://www.youtube.com/results?search_query=cat+cow+stretch+and+childs+pose'
+      }
+    ];
+
+    // --- 4-Week Rotating Routine Engine ---
+    const WEEKLY_SCHEDULE = [
+      [
+        { focus: "Goalie Agility & Legs", opt1: "10-min easy walk + 2 min leg swings & calf stretches (12m)", opt2: "Dumbbell/bodyweight squats (3x8), glute bridges (3x10), band kickbacks (15m)", opt3: "Kettlebell Goblet Squats (3x8), Lateral Skater Jumps (3x6 each way for diving power), 5 min treadmill incline jog (18m)" },
+        { focus: "Pilates Core, Hips & Goalie Reflexes", opt1: "Gentle Pilates floor flow: Cat-cow, bird-dog holds, child's pose (12m)", opt2: "Pilates core mat: Deadbugs (3x8), glute bridge march (3x10), side-lying leg circles (15m)", opt3: "Goalie core circuit: Forearm plank (3x30s), side planks (3x20s/side), tennis ball wall tosses in ready stance (18m)" },
+        { focus: "Upper Body Strength & Grip", opt1: "Shoulder rolls, doorway chest stretch, resistance band gentle pull-aparts (12m)", opt2: "Light dumbbell bench press (3x8), standing band face pulls (3x10), dumbbell bicep curls (15m)", opt3: "Band-assisted pull-ups on bar (3x5), dumbbell flat bench press (3x10), single-arm dumbbell row on bench (18m)" },
+        { focus: "Active Recovery & Movement Flow", opt1: "12-min easy stroll outside or flat treadmill walk with music/podcast (12m)", opt2: "Treadmill incline power walk (3-4% incline, brisk pace) + standing calf & ankle stretches (15m)", opt3: "Outdoor bike ride or brisk jog/walk intervals (1 min jog, 1 min walk x 7 rounds) + hip flexor stretches (18m)" },
+        { focus: "Goalie Fast Feet & Reaction", opt1: "Goalie hand-eye coordination: Tennis ball bounce & catches against wall + wrist stretches (12m)", opt2: "Agility footwork: Quick line hops (side-to-side, front-to-back, 3x20s) + band side shuffles (15m)", opt3: "Goalie explosion: Lateral skater bounds (3x8), drop-step sprints (5 yards x 6), kettlebell swings (3x10) (18m)" },
+        { focus: "Space Explorer Adventure & Circuit", opt1: "Outdoor leisure walk, park stroll, or easy treadmill cruising (15m)", opt2: "Full-body dumbbell & band circuit: DB squats (8), DB bench press (8), band rows (10) x 2 rounds (18m)", opt3: "Cosmic Circuit: 5-min treadmill warm-up, then 3 rounds: 8 Kettlebell swings, 8 DB push press, 10 lateral bounds, 30s plank (20m)" },
+        { focus: "Deep Cosmic Stretch & Reset", opt1: "Zero Gravity Rest: Full-body lying floor stretch, deep breathing, legs-up-the-wall pose (10m)", opt2: "Full-body flexibility flow: Hamstring stretch, couch stretch (hip flexors), spinal twists, shoulder openers (15m)", opt3: "Dynamic mobility & core: World's greatest stretch, cat-cow, downward dog to cobra flow, 5-min easy walk (18m)" }
+      ],
+      [
+        { focus: "Goalie Agility & Legs", opt1: "Quad & hip floor mobility + 8 min easy treadmill walk (12m)", opt2: "Kettlebell suitcase deadlifts (3x8), resistance band monster walks (3x10 steps), wall sits (3x20s) (15m)", opt3: "Kettlebell Russian swings (3x10), broad jumps with soft stick landing (3x5), dumbbell reverse lunges (3x6/leg) (18m)" },
+        { focus: "Pilates Core, Hips & Goalie Reflexes", opt1: "Floor spinal twists, butterfly stretch, deep diaphragmatic breathing (12m)", opt2: "Resistance band pallof press / core anti-rotation (3x10) + slow controlled Pilates bicycles (15m)", opt3: "Hanging knee raises from pull-up bar (or bench reverse crunches) + side plank hip dips + tennis ball wall drop-catches (18m)" },
+        { focus: "Upper Body Strength & Grip", opt1: "Resistance band shoulder pass-throughs, neck mobility, gentle wrist/forearm stretches (12m)", opt2: "Incline push-ups on bench (3x8), band lat pulldowns from pull-up bar (3x10), light dumbbell overhead press (15m)", opt3: "Pull-up bar active dead hangs (3x20s for grip & spine), dumbbell push press (3x8), renegade rows on floor/bench (18m)" },
+        { focus: "Active Recovery & Movement Flow", opt1: "Gentle yoga flow: Downward dog, cobra, child's pose, seated forward fold (12m)", opt2: "15-min outdoor nature walk with steady rhythmic breathing and arm swings (15m)", opt3: "Treadmill pyramid walk/jog: 3 min warm walk, 4x(1 min brisk jog, 1 min walk at 4% incline), 3 min cool down (18m)" },
+        { focus: "Goalie Fast Feet & Reaction", opt1: "Balance & ankle stability: Single-leg stands (45s/leg) while tossing a ball + calf stretches (12m)", opt2: "Goalie set-position hold + rapid micro-shuffles (3x20s) + light dumbbell Romanian deadlifts (15m)", opt3: "Box/Bench step-downs with soft landing stick (3x6/leg) + lateral plyo hops + light kettlebell clean & press (18m)" },
+        { focus: "Space Explorer Adventure & Circuit", opt1: "15-min outdoor bike ride at an easy cruising pace or family walk (15m)", opt2: "Pilates & strength blend: Glute bridges (10), bird-dogs (8 each), DB bench rows (8 each), band pull-aparts (12) (18m)", opt3: "Treadmill hill climb: 5 min warm-up, 10 min alternating 1 min steep incline (6%) and 1 min flat, 5 min cool down (20m)" },
+        { focus: "Deep Cosmic Stretch & Reset", opt1: "Gentle child's pose, butterfly stretch, seated neck/shoulder rolls (10m)", opt2: "Goalie lower body mobility: Deep groin/adductor stretch, pigeon pose, ankle rocks (15m)", opt3: "Mobility + gentle Pilates core: Cat-cow, bird-dogs, glute bridge hold, 10 min slow walk (18m)" }
+      ],
+      [
+        { focus: "Goalie Agility & Legs", opt1: "World's greatest stretch flow + gentle hip opening stretches on yoga mat (12m)", opt2: "Dumbbell step-ups onto bench (3x8 each leg) + resistance band side-lying clamshells (15m)", opt3: "Lateral bounds over small cone/marker (3x8 each side), kettlebell goblet squats (3x10), quick hops (18m)" },
+        { focus: "Pilates Core, Hips & Goalie Reflexes", opt1: "Gentle hip opener series: Pigeon pose / figure-4 stretch, hamstring release (12m)", opt2: "Pilates Hundred progression (knees bent) + bird-dogs with 2s hold + Superman holds (15m)", opt3: "Russian twists with light dumbbell (3x12) + forearm plank shoulder taps + reactive lateral wall catches (18m)" },
+        { focus: "Upper Body Strength & Grip", opt1: "Gentle upper body mobility flow + child's pose shoulder reach on floor (12m)", opt2: "Flat dumbbell chest flyes on bench (light), resistance band seated rows, overhead tricep extensions (15m)", opt3: "Band-assisted chin-ups / bar hangs (3x5), dumbbell floor press (3x10), kettlebell upright row (3x8) (18m)" },
+        { focus: "Active Recovery & Movement Flow", opt1: "Floor foam rolling / tennis ball massage on arches, calves, and back + gentle stretches (12m)", opt2: "15-min stationary bike or brisk treadmill stride + standing quad stretches (15m)", opt3: "Outdoor fast walk/jog combo with 5 sets of 20-second soccer goalie footwork shuffles on grass (18m)" },
+        { focus: "Goalie Fast Feet & Reaction", opt1: "Reaction ball drills or wall ball catch in goalie ready stance (light fun) + hip flexor stretch (12m)", opt2: "Speed ladder / line drill simulation on floor (in-and-outs, ickey shuffle) + glute bridge hold (15m)", opt3: "Broad jump to goalie dive stance recovery (3x5) + kettlebell goblet squats (3x8) + treadmill sprint bursts (3x15s) (18m)" },
+        { focus: "Space Explorer Adventure & Circuit", opt1: "Fun outdoor frisbee, catch, or walking the dog (15m)", opt2: "Dumbbell deadlift to upright row (3x8), bench step-ups (3x8 each), band bicep curls (3x10) (18m)", opt3: "Goalie Supernova Workout: 3 rounds of 10 Goblet squats, 8 Incline bench push-ups, 6 broad jumps, 8 band pulldowns (20m)" },
+        { focus: "Deep Cosmic Stretch & Reset", opt1: "Relaxing floor breathing, knees-to-chest stretch, gentle spinal twists (10m)", opt2: "Resistance band full-body stretch: Band hamstring stretch, band chest opener, band lat stretch (15m)", opt3: "Full yoga mobility flow: Sun salutation modifications, warrior stretches, 8 min gentle walk (18m)" }
+      ],
+      [
+        { focus: "Goalie Agility & Legs", opt1: "10 min outdoor brisk walk + standing quad & hamstring stretch (12m)", opt2: "Kettlebell Romanian deadlifts (3x8), resistance band seated leg abductions, bench hip thrusts (15m)", opt3: "Goalie dive tucks / lateral speed shuffles (3x20s), kettlebell swings (3x12), dumbbell goblet lunges (18m)" },
+        { focus: "Pilates Core, Hips & Goalie Reflexes", opt1: "Cat-cow, seated side bends, prone cobra spinal extension (12m)", opt2: "Pilates side-kick series, bridge with band around knees, deadbugs (15m)", opt3: "Hollow body hold progression + hanging bar knee tucks + kneeling tennis ball chest throws against wall (18m)" },
+        { focus: "Upper Body Strength & Grip", opt1: "Standing chest opener, cross-body shoulder stretch, wrist roller mobility (12m)", opt2: "Dumbbell neutral-grip overhead press on bench, band pull-aparts (3x12), dumbbell hammer curls (15m)", opt3: "Pull-up bar eccentric negatives (slow lower, 3x4), dumbbell bench press (3x8), DB single-arm bent-over row (3x8/arm) (18m)" },
+        { focus: "Active Recovery & Movement Flow", opt1: "12-min gentle sunshine walk or light treadmill flat stroll (12m)", opt2: "Treadmill endurance walk at 5% incline (15 min steady pace) focusing on posture (15m)", opt3: "Outdoor bike ride (18 mins) or brisk run-walk intervals around neighborhood (18m)" },
+        { focus: "Goalie Fast Feet & Reaction", opt1: "Gentle ankle circles, single-leg balance, quad stretch (12m)", opt2: "Resistance band resisted lateral shuffles (3x15 steps) + light dumbbell thrusters (squat to press, 3x6) (15m)", opt3: "Explosive vertical jumps (touch pullup bar, 3x5) + skater hops with 2s stick (3x6/leg) + rapid wall ball reaction catches (18m)" },
+        { focus: "Space Explorer Adventure & Circuit", opt1: "Easy treadmill walk watching a show or YouTube video (15m)", opt2: "Dumbbell farmers carry around room/yard (3x30s for grip & core) + bodyweight squats + push-ups on bench (18m)", opt3: "20-min outdoor interval bike ride or run-walk challenge with sprint bursts (20m)" },
+        { focus: "Deep Cosmic Stretch & Reset", opt1: "Gentle restorative floor stretches and listening to relaxing cosmic music (10m)", opt2: "Deep hip & shoulder reset: Frog pose stretch, doorway chest stretch, standing quad stretch (15m)", opt3: "Dynamic recovery: 10 min easy flat treadmill stride + 8 min full-body mobility flow (18m)" }
+      ]
+    ];
+
+    const START_DATE = new Date('2026-11-02T00:00:00');
+
+    function formatDateKey(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function getDayIndex(dateObj) {
+      const diffTime = dateObj.getTime() - START_DATE.getTime();
+      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // Synthesized Web Audio
+    let audioCtx = null;
+    function playAudioTone(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2);
+          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.35);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc.start(now);
+          osc.stop(now + 0.55);
+        } else if (type === 'tap') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'timer') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        }
+      } catch (e) {}
+    }
+
+    function App() {
+      const [currentDate, setCurrentDate] = useState(() => new Date('2026-11-02T00:00:00'));
+      const [logs, setLogs] = useState(() => {
+        try {
+          const saved = localStorage.getItem('orbit_fitness_react_logs');
+          return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+          return {};
+        }
+      });
+
+      const [settings, setSettings] = useState(() => {
+        try {
+          const saved = localStorage.getItem('orbit_fitness_react_settings');
+          return saved ? JSON.parse(saved) : {
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/1FpP5YviT1YBAltadBppLr7EpzoiSeE3woNHOtRo0OoY/edit',
+            webhookUrl: ''
+          };
+        } catch (e) {
+          return {
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/1FpP5YviT1YBAltadBppLr7EpzoiSeE3woNHOtRo0OoY/edit',
+            webhookUrl: ''
+          };
+        }
+      });
+
+      const [syncStatus, setSyncStatus] = useState('idle');
+      const [toast, setToast] = useState(null);
+      const [modal, setModal] = useState(null);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('orbit_fitness_react_logs', JSON.stringify(logs));
+        } catch (e) {}
+      }, [logs]);
+
+      useEffect(() => {
+        try {
+          localStorage.setItem('orbit_fitness_react_settings', JSON.stringify(settings));
+        } catch (e) {}
+      }, [settings]);
+
+      useEffect(() => {
+        if (settings.webhookUrl) {
+          syncFromSheetViaJsonp();
+        }
+      }, [settings.webhookUrl]);
+
+      const showNotification = (msg, type = 'info') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 3200);
+      };
+
+      // JSONP GET Request
+      const syncFromSheetViaJsonp = () => {
+        if (!settings.webhookUrl) return;
+        setSyncStatus('syncing');
+
+        const callbackName = 'orbit_cb_' + Date.now();
+        window[callbackName] = (response) => {
+          delete window[callbackName];
+          const scriptTag = document.getElementById('jsonp-temp-script');
+          if (scriptTag) scriptTag.remove();
+
+          if (response && response.status === 'success' && response.logs) {
+            setLogs((prev) => {
+              const merged = { ...prev };
+              Object.keys(response.logs).forEach((key) => {
+                if (response.logs[key].completed) {
+                  merged[key] = {
+                    ...merged[key],
+                    ...response.logs[key],
+                    synced: true
+                  };
+                }
+              });
+              return merged;
+            });
+            setSyncStatus('synced');
+            showNotification('Bidirectional sync complete!', 'success');
+          } else {
+            setSyncStatus('error');
+          }
+        };
+
+        const script = document.createElement('script');
+        script.id = 'jsonp-temp-script';
+        script.src = `${settings.webhookUrl}${settings.webhookUrl.includes('?') ? '&' : '?'}action=getLogs&callback=${callbackName}&_t=${Date.now()}`;
+        script.onerror = () => {
+          delete window[callbackName];
+          script.remove();
+          setSyncStatus('error');
+          showNotification('Offline mode: Could not reach Google Apps Script', 'info');
+        };
+        document.body.appendChild(script);
+      };
+
+      // Atomic POST Request (no-cors)
+      const dispatchPostToSheet = async (logEntry) => {
+        if (!settings.webhookUrl) return;
+        setSyncStatus('syncing');
+        try {
+          await fetch(settings.webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(logEntry)
+          });
+          setSyncStatus('synced');
+        } catch (err) {
+          setSyncStatus('error');
+        }
+      };
+
+      const dateKey = formatDateKey(currentDate);
+      const dayIdx = getDayIndex(currentDate);
+      const dayNum = dayIdx + 1;
+      const weekIdx = Math.floor(Math.max(0, dayIdx) / 7) % 4;
+      const dayOfWeekIdx = (currentDate.getDay() + 6) % 7;
+      const currentRoutine = WEEKLY_SCHEDULE[weekIdx][dayOfWeekIdx] || WEEKLY_SCHEDULE[0][0];
+
+      const currentDayLog = logs[dateKey] || {
+        date: dateKey,
+        chosen: '',
+        completed: false,
+        minutes: 15,
+        customText: '',
+        notes: ''
+      };
+
+      const totalCompleted = useMemo(() => {
+        return Object.values(logs).filter((l) => l && l.completed).length;
+      }, [logs]);
+
+      const totalMinutes = useMemo(() => {
+        return Object.values(logs).reduce((acc, l) => acc + (l.completed ? Number(l.minutes || 0) : 0), 0);
+      }, [logs]);
+
+      const currentStreak = useMemo(() => {
+        let streak = 0;
+        let testD = new Date();
+        testD.setHours(0, 0, 0, 0);
+
+        const todayK = formatDateKey(testD);
+        const yestD = new Date(testD);
+        yestD.setDate(yestD.getDate() - 1);
+        const yestK = formatDateKey(yestD);
+
+        let runnerKey = logs[todayK]?.completed ? todayK : (logs[yestK]?.completed ? yestK : null);
+        if (runnerKey) {
+          let runner = new Date(runnerKey === todayK ? testD : yestD);
+          while (true) {
+            const k = formatDateKey(runner);
+            if (logs[k] && logs[k].completed) {
+              streak++;
+              runner.setDate(runner.getDate() - 1);
+            } else {
+              break;
+            }
+          }
+        }
+        return streak;
+      }, [logs]);
+
+      const rankInfo = useMemo(() => {
+        if (totalCompleted >= 100) {
+          return { title: '🚀 Cosmic Legend', icon: '🚀', pct: 100, next: 'Max Level Unlocked' };
+        } else if (totalCompleted >= 50) {
+          const p = Math.round(((totalCompleted - 50) / 50) * 100);
+          return { title: '🪐 Fleet Commander', icon: '🪐', pct: Math.min(100, Math.max(10, p)), next: `${totalCompleted}/100 to Legend` };
+        } else if (totalCompleted >= 25) {
+          const p = Math.round(((totalCompleted - 25) / 25) * 100);
+          return { title: '✨ Star Navigator', icon: '✨', pct: Math.min(100, Math.max(10, p)), next: `${totalCompleted}/50 to Commander` };
+        } else if (totalCompleted >= 10) {
+          const p = Math.round(((totalCompleted - 10) / 15) * 100);
+          return { title: '🌕 Orbit Explorer', icon: '🌕', pct: Math.min(100, Math.max(10, p)), next: `${totalCompleted}/25 to Navigator` };
+        } else {
+          const p = Math.round((totalCompleted / 10) * 100);
+          return { title: '🛸 Space Cadet', icon: '🛸', pct: Math.min(100, Math.max(10, p)), next: `${totalCompleted}/10 to Explorer` };
+        }
+      }, [totalCompleted]);
+
+      const handleToggleComplete = (chosenTier, duration) => {
+        playAudioTone('success');
+        const isAlreadyComplete = currentDayLog.completed && currentDayLog.chosen === chosenTier;
+        const newLog = {
+          ...currentDayLog,
+          date: dateKey,
+          chosen: isAlreadyComplete ? '' : chosenTier,
+          completed: !isAlreadyComplete,
+          minutes: duration || currentDayLog.minutes || 15,
+          timestamp: new Date().toISOString()
+        };
+
+        setLogs((prev) => ({ ...prev, [dateKey]: newLog }));
+        dispatchPostToSheet(newLog);
+
+        if (!isAlreadyComplete) {
+          showNotification(`Logged: ${chosenTier}`, 'success');
+        } else {
+          showNotification('Marked incomplete', 'info');
+        }
+      };
+
+      const handleCustomLog = (text) => {
+        playAudioTone('success');
+        const customName = text.trim() || 'Custom Movement / Rested';
+        const newLog = {
+          ...currentDayLog,
+          date: dateKey,
+          chosen: `Option 4: ${customName}`,
+          customText: customName,
+          completed: true,
+          minutes: currentDayLog.minutes || 15,
+          timestamp: new Date().toISOString()
+        };
+        setLogs((prev) => ({ ...prev, [dateKey]: newLog }));
+        dispatchPostToSheet(newLog);
+        showNotification(`Logged: ${customName}`, 'success');
+      };
+
+      return (
+        <div className="max-w-md mx-auto min-h-screen flex flex-col justify-between p-4 pb-24 sm:p-5 relative">
+          
+          {toast && (
+            <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-xs font-bold shadow-2xl flex items-center gap-2 border backdrop-blur-md transition-all ${
+              toast.type === 'success' ? 'bg-emerald-950/90 text-emerald-300 border-emerald-600/70' : 'bg-space-900/95 text-slate-200 border-space-700'
+            }`}>
+              <i className={`fa-solid ${toast.type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-space-glow'}`}></i>
+              <span>{toast.msg}</span>
+            </div>
+          )}
+
+          {/* Header */}
+          <header className="flex items-center justify-between pb-4 border-b border-space-800/80">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-space-800 to-space-700 border border-space-gold/50 flex items-center justify-center text-space-gold shadow-md shrink-0">
+                <i className="fa-solid fa-satellite text-sm"></i>
+              </div>
+              <div>
+                <h1 className="font-extrabold text-sm tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-space-starlight via-space-gold to-white">
+                  ORBIT FITNESS
+                </h1>
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                  <span className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-amber-400 animate-ping' : 'bg-slate-500'}`}></span>
+                  <span>{syncStatus === 'synced' ? 'Sheet Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Mode'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <a href={settings.sheetUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-600/50 text-xs transition" title="Open Google Sheet">
+                <i className="fa-solid fa-table-cells"></i>
+              </a>
+              <button onClick={() => setModal('codex')} className="p-2 rounded-lg bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700 text-xs transition" title="Exercise Codex">
+                <i className="fa-solid fa-book-sparkles text-space-gold"></i>
+              </button>
+              <button onClick={() => setModal('timer')} className="p-2 rounded-lg bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700 text-xs transition" title="Timer">
+                <i className="fa-solid fa-stopwatch text-space-glow"></i>
+              </button>
+              <button onClick={() => setModal('settings')} className="p-2 rounded-lg bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700 text-xs transition" title="Settings">
+                <i className="fa-solid fa-gear"></i>
+              </button>
+            </div>
+          </header>
+
+          {/* Gamified Hero Card */}
+          <section className="my-4 bg-gradient-to-br from-space-900 via-space-850 to-space-900 rounded-2xl p-4 border border-space-800 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{rankInfo.icon}</span>
+                <div>
+                  <div className="font-bold text-sm text-white">{rankInfo.title}</div>
+                  <div className="text-[10px] text-slate-400">{rankInfo.next}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold text-xs">
+                <i className="fa-solid fa-fire text-amber-400"></i>
+                <span>{currentStreak} Streak</span>
+              </div>
+            </div>
+
+            <div className="w-full bg-space-950 rounded-full h-2 overflow-hidden border border-space-800 mt-2">
+              <div className="bg-gradient-to-r from-space-glow via-space-accent to-space-gold h-2 rounded-full transition-all duration-500" style={{ width: `${rankInfo.pct}%` }}></div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-space-800/80 text-center">
+              <div>
+                <div className="text-base font-black text-white">{totalCompleted}</div>
+                <div className="text-[10px] text-slate-400">Active Days</div>
+              </div>
+              <div>
+                <div className="text-base font-black text-space-glow">{totalMinutes}m</div>
+                <div className="text-[10px] text-slate-400">Total Moved</div>
+              </div>
+              <div>
+                <div className="text-base font-black text-emerald-400">{Math.max(0, 182 - totalCompleted)}</div>
+                <div className="text-[10px] text-slate-400">Days to Goal</div>
+              </div>
+            </div>
+          </section>
+
+          {/* Date Navigator */}
+          <div className="flex items-center justify-between bg-space-900 rounded-xl p-3 border border-space-800 mb-3">
+            <button onClick={() => {
+              const d = new Date(currentDate);
+              d.setDate(d.getDate() - 1);
+              setCurrentDate(d);
+              playAudioTone('tap');
+            }} className="p-2 rounded-lg bg-space-850 hover:bg-space-800 border border-space-700 text-slate-300">
+              <i className="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+
+            <div className="text-center">
+              <div className="font-bold text-sm text-white">
+                {currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </div>
+              <div className="text-[10px] text-space-gold font-mono">Day {dayNum} • {currentRoutine.focus}</div>
+            </div>
+
+            <button onClick={() => {
+              const d = new Date(currentDate);
+              d.setDate(d.getDate() + 1);
+              setCurrentDate(d);
+              playAudioTone('tap');
+            }} className="p-2 rounded-lg bg-space-850 hover:bg-space-800 border border-space-700 text-slate-300">
+              <i className="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+
+          {/* 3 Workouts Checklist Tiers */}
+          <div className="space-y-3 flex-1">
+            
+            {/* Option 1: Orbit Cruise */}
+            <div onClick={() => handleToggleComplete('Option 1 (Orbit Cruise)', 12)} className={`rounded-xl p-3.5 border transition cursor-pointer select-none relative ${
+              currentDayLog.completed && currentDayLog.chosen.includes('Option 1') 
+                ? 'bg-emerald-950/40 border-emerald-500 shadow-md shadow-emerald-500/10' 
+                : 'bg-space-900 border-space-800 hover:border-emerald-700/60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+                      Option 1: Orbit Cruise
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">10–12m</span>
+                  </div>
+                  <p className="text-xs text-slate-200 leading-snug">{currentRoutine.opt1}</p>
+                </div>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition ${
+                  currentDayLog.completed && currentDayLog.chosen.includes('Option 1')
+                    ? 'bg-emerald-500 border-emerald-400 text-space-950'
+                    : 'border-slate-600 bg-space-950'
+                }`}>
+                  {currentDayLog.completed && currentDayLog.chosen.includes('Option 1') && <i className="fa-solid fa-check text-xs font-black"></i>}
+                </div>
+              </div>
+            </div>
+
+            {/* Option 2: Stellar Stride */}
+            <div onClick={() => handleToggleComplete('Option 2 (Stellar Stride)', 15)} className={`rounded-xl p-3.5 border transition cursor-pointer select-none relative ${
+              currentDayLog.completed && currentDayLog.chosen.includes('Option 2') 
+                ? 'bg-blue-950/40 border-blue-500 shadow-md shadow-blue-500/10' 
+                : 'bg-space-900 border-space-800 hover:border-blue-700/60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">
+                      Option 2: Stellar Stride
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">15m</span>
+                  </div>
+                  <p className="text-xs text-slate-200 leading-snug">{currentRoutine.opt2}</p>
+                </div>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition ${
+                  currentDayLog.completed && currentDayLog.chosen.includes('Option 2')
+                    ? 'bg-blue-500 border-blue-400 text-space-950'
+                    : 'border-slate-600 bg-space-950'
+                }`}>
+                  {currentDayLog.completed && currentDayLog.chosen.includes('Option 2') && <i className="fa-solid fa-check text-xs font-black"></i>}
+                </div>
+              </div>
+            </div>
+
+            {/* Option 3: Rocket Boost */}
+            <div onClick={() => handleToggleComplete('Option 3 (Rocket Boost)', 18)} className={`rounded-xl p-3.5 border transition cursor-pointer select-none relative ${
+              currentDayLog.completed && currentDayLog.chosen.includes('Option 3') 
+                ? 'bg-amber-950/40 border-amber-500 shadow-md shadow-amber-500/10' 
+                : 'bg-space-900 border-space-800 hover:border-amber-700/60'
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">
+                      Option 3: Rocket Boost
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">18–20m</span>
+                  </div>
+                  <p className="text-xs text-slate-200 leading-snug">{currentRoutine.opt3}</p>
+                </div>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border transition ${
+                  currentDayLog.completed && currentDayLog.chosen.includes('Option 3')
+                    ? 'bg-amber-500 border-amber-400 text-space-950'
+                    : 'border-slate-600 bg-space-950'
+                }`}>
+                  {currentDayLog.completed && currentDayLog.chosen.includes('Option 3') && <i className="fa-solid fa-check text-xs font-black"></i>}
+                </div>
+              </div>
+            </div>
+
+            {/* Option 4: Custom / Other */}
+            <div className={`rounded-xl p-3.5 border transition space-y-2.5 ${
+              currentDayLog.completed && currentDayLog.chosen.includes('Option 4')
+                ? 'bg-purple-950/40 border-purple-500 shadow-md'
+                : 'bg-space-900 border-space-800'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-space-800 text-space-starlight border border-space-700">
+                  Option 4: Custom / Other
+                </span>
+                <span className="text-[10px] text-slate-400">Fill in the blank</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button type="button" onClick={() => handleCustomLog('Played soccer match / practice')} className="text-[10px] px-2 py-0.5 rounded bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700">
+                  ⚽ Played Soccer
+                </button>
+                <button type="button" onClick={() => handleCustomLog('Sick with cold. Rested & recovered')} className="text-[10px] px-2 py-0.5 rounded bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700">
+                  🛌 Sick / Rested
+                </button>
+                <button type="button" onClick={() => handleCustomLog('Outdoor bike ride with family')} className="text-[10px] px-2 py-0.5 rounded bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700">
+                  🚴 Bike Ride
+                </button>
+                <button type="button" onClick={() => handleCustomLog('Walking outside with dog')} className="text-[10px] px-2 py-0.5 rounded bg-space-850 hover:bg-space-800 text-slate-300 border border-space-700">
+                  🚶 Outside Walk
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  id="custom-input-box"
+                  defaultValue={currentDayLog.customText || ''} 
+                  placeholder="e.g. Played soccer, rested today..."
+                  className="flex-1 bg-space-950 border border-space-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-space-gold"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const el = document.getElementById('custom-input-box');
+                    handleCustomLog(el ? el.value : '');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-space-800 hover:bg-space-700 text-xs font-bold text-space-starlight border border-space-700"
+                >
+                  Log
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Modal: Exercise Codex */}
+          {modal === 'codex' && (
+            <div className="fixed inset-0 z-50 bg-space-950/80 backdrop-blur-sm p-4 flex items-center justify-center">
+              <div className="bg-space-900 border border-space-700 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+                <div className="p-4 border-b border-space-800 flex items-center justify-between bg-space-850">
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-book-sparkles text-space-gold"></i>
+                    <h2 className="font-bold text-sm text-white">Goalkeeper Exercise Codex</h2>
+                  </div>
+                  <button onClick={() => setModal(null)} className="p-1 text-slate-400 hover:text-white">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+                <div className="p-3 overflow-y-auto space-y-3 custom-scroll">
+                  {EXERCISE_CODEX.map(ex => (
+                    <div key={ex.id} className="p-3 bg-space-950 rounded-xl border border-space-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-space-850 text-space-glow border border-space-700">{ex.equipment}</span>
+                        <a href={ex.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-red-400 hover:text-red-300 flex items-center gap-1">
+                          <i className="fa-brands fa-youtube"></i> Form Video
+                        </a>
+                      </div>
+                      <div className="font-bold text-xs text-white">{ex.name}</div>
+                      <div className="text-[11px] text-slate-300 leading-snug">{ex.desc}</div>
+                      <div className="text-[10px] text-emerald-400 bg-space-900 p-2 rounded-lg border border-space-800">
+                        <strong>🥅 Goalie Benefit:</strong> {ex.benefit}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Timer */}
+          {modal === 'timer' && (
+            <div className="fixed inset-0 z-50 bg-space-950/80 backdrop-blur-sm p-4 flex items-center justify-center">
+              <div className="bg-space-900 border border-space-700 rounded-2xl w-full max-w-sm p-5 text-center shadow-2xl relative">
+                <button onClick={() => setModal(null)} className="absolute top-3 right-3 text-slate-400 hover:text-white p-1">
+                  <i className="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div className="w-10 h-10 rounded-full bg-space-glow/10 border border-space-glow/40 flex items-center justify-center text-space-glow mx-auto mb-2">
+                  <i className="fa-solid fa-stopwatch text-lg"></i>
+                </div>
+                <h3 className="font-bold text-base text-white mb-1">Mission Timer</h3>
+                <p className="text-[11px] text-slate-400 mb-4">Focus and complete your daily movement</p>
+
+                <TimerComponent onFinish={() => {
+                  playAudioTone('timer');
+                  showNotification('Timer completed! Great work!', 'success');
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Settings */}
+          {modal === 'settings' && (
+            <div className="fixed inset-0 z-50 bg-space-950/80 backdrop-blur-sm p-4 flex items-center justify-center">
+              <div className="bg-space-900 border border-space-700 rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-space-800 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-gear text-space-gold"></i>
+                    <h3 className="font-bold text-sm text-white">Google Sheet Sync Settings</h3>
+                  </div>
+                  <button onClick={() => setModal(null)} className="text-slate-400 hover:text-white p-1">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs text-slate-300">
+                  <div>
+                    <label className="block font-semibold text-white mb-1">Google Sheet URL</label>
+                    <input 
+                      type="text" 
+                      id="settings-sheet-url"
+                      defaultValue={settings.sheetUrl} 
+                      className="w-full bg-space-950 border border-space-700 rounded-lg p-2 text-xs text-slate-200"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-white mb-1">Google Apps Script Web App URL</label>
+                    <input 
+                      type="text" 
+                      id="settings-webhook-url"
+                      defaultValue={settings.webhookUrl} 
+                      placeholder="https://script.google.com/macros/s/.../exec"
+                      className="w-full bg-space-950 border border-space-700 rounded-lg p-2 text-xs text-slate-200"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Paste the Web App URL from Apps Script deployment to enable real-time bidirectional syncing.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => {
+                      const sUrl = document.getElementById('settings-sheet-url').value.trim();
+                      const wUrl = document.getElementById('settings-webhook-url').value.trim();
+                      setSettings({ sheetUrl: sUrl, webhookUrl: wUrl });
+                      showNotification('Settings saved!', 'success');
+                      setModal(null);
+                    }} className="flex-1 py-2 bg-space-gold hover:bg-amber-400 text-space-950 font-bold rounded-lg text-xs">
+                      Save Settings
+                    </button>
+                    <button onClick={syncFromSheetViaJsonp} className="px-3 py-2 bg-space-800 hover:bg-space-700 text-white rounded-lg text-xs border border-space-700">
+                      Sync Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    function TimerComponent({ onFinish }) {
+      const [seconds, setSeconds] = useState(900);
+      const [running, setRunning] = useState(false);
+
+      useEffect(() => {
+        let t = null;
+        if (running && seconds > 0) {
+          t = setInterval(() => setSeconds(s => s - 1), 1000);
+        } else if (running && seconds === 0) {
+          setRunning(false);
+          if (onFinish) onFinish();
+        }
+        return () => clearInterval(t);
+      }, [running, seconds]);
+
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      return (
+        <div className="space-y-4">
+          <div className="font-mono text-4xl font-black text-space-gold tracking-widest">{formatted}</div>
+          <div className="flex justify-center gap-1.5">
+            {[600, 720, 900, 1080, 1200].map(sec => (
+              <button 
+                key={sec} 
+                onClick={() => { setSeconds(sec); setRunning(false); }}
+                className={`text-[10px] font-bold px-2 py-1 rounded border ${seconds === sec ? 'bg-space-gold text-space-950 border-space-gold' : 'bg-space-800 text-slate-300 border-space-700'}`}
+              >
+                {sec / 60}m
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setRunning(!running)} 
+              className={`flex-1 py-2 rounded-xl font-black text-xs ${running ? 'bg-amber-500 text-space-950' : 'bg-space-glow text-space-950'}`}
+            >
+              {running ? 'Pause' : 'Start'}
+            </button>
+            <button 
+              onClick={() => { setRunning(false); setSeconds(900); }} 
+              className="px-4 py-2 rounded-xl bg-space-800 text-slate-300 font-bold text-xs border border-space-700"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
