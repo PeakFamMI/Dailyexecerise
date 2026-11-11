@@ -355,17 +355,20 @@
         }
       });
 
+      const LIVE_WEBHOOK = 'https://script.google.com/macros/s/AKfycby8y8aw7aK7A7aFv4BtiNjIS5wn-jMqzM9k5iqDwv5w0x1O9j4lF7huMdDfOBkIJZhFsQ/exec';
       const [settings, setSettings] = useState(() => {
         try {
           const saved = localStorage.getItem('orbit_fitness_react_settings');
-          return saved ? JSON.parse(saved) : {
-            sheetUrl: 'https://docs.google.com/spreadsheets/d/1FpP5YviT1YBAltadBppLr7EpzoiSeE3woNHOtRo0OoY/edit',
-            webhookUrl: ''
+          const parsed = saved ? JSON.parse(saved) : {};
+          const url = (parsed.webhookUrl && parsed.webhookUrl.trim() !== '') ? parsed.webhookUrl : LIVE_WEBHOOK;
+          return {
+            sheetUrl: parsed.sheetUrl || 'https://docs.google.com/spreadsheets/d/1FpP5YviT1YBAltadBppLr7EpzoiSeE3woNHOtRo0OoY/edit',
+            webhookUrl: url
           };
         } catch (e) {
           return {
             sheetUrl: 'https://docs.google.com/spreadsheets/d/1FpP5YviT1YBAltadBppLr7EpzoiSeE3woNHOtRo0OoY/edit',
-            webhookUrl: ''
+            webhookUrl: LIVE_WEBHOOK
           };
         }
       });
