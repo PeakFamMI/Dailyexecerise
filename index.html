@@ -339,7 +339,13 @@
     }
 
     function App() {
-      const [currentDate, setCurrentDate] = useState(() => new Date('2026-11-02T00:00:00'));
+      // DEFAULT TO TODAY DYNAMICALLY! (Never stuck on origin date)
+      const [currentDate, setCurrentDate] = useState(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+      });
+
       const [logs, setLogs] = useState(() => {
         try {
           const saved = localStorage.getItem('orbit_fitness_react_logs');
@@ -417,7 +423,7 @@
               return merged;
             });
             setSyncStatus('synced');
-            showNotification('Bidirectional sync complete!', 'success');
+            showNotification('Sync complete: Sheet logs loaded!', 'success');
           } else {
             setSyncStatus('error');
           }
@@ -435,27 +441,42 @@
         document.body.appendChild(script);
       };
 
-      // Atomic POST Request (no-cors)
+      // Atomic POST Request to Google Sheet
       const dispatchPostToSheet = async (logEntry) => {
-        if (!settings.webhookUrl) return;
+        if (!settings.webhookUrl) {
+          showNotification('Saved locally! Add Apps Script Webhook URL in Settings to sync with Google Sheet.', 'info');
+          return;
+        }
         setSyncStatus('syncing');
         try {
+          const payload = {
+            date: logEntry.date,
+            dayNumber: `Day ${dayNum}`,
+            chosen: logEntry.chosen,
+            activityDetails: logEntry.activityDetails || logEntry.customText || logEntry.chosen,
+            minutes: Number(logEntry.minutes) || 15,
+            completed: Boolean(logEntry.completed),
+            notes: logEntry.notes || logEntry.feeling || ''
+          };
+
           await fetch(settings.webhookUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(logEntry)
+            body: JSON.stringify(payload)
           });
           setSyncStatus('synced');
+          showNotification('Logged and synced to Google Sheet!', 'success');
         } catch (err) {
           setSyncStatus('error');
+          showNotification('Saved locally (Sync pending)', 'info');
         }
       };
 
       const dateKey = formatDateKey(currentDate);
-      const dayIdx = getDayIndex(currentDate);
+      const dayIdx = Math.max(0, getDayIndex(currentDate));
       const dayNum = dayIdx + 1;
-      const weekIdx = Math.floor(Math.max(0, dayIdx) / 7) % 4;
+      const weekIdx = Math.floor(dayIdx / 7) % 4;
       const dayOfWeekIdx = (currentDate.getDay() + 6) % 7;
       const currentRoutine = WEEKLY_SCHEDULE[weekIdx][dayOfWeekIdx] || WEEKLY_SCHEDULE[0][0];
 
@@ -523,10 +544,16 @@
       const handleToggleComplete = (chosenTier, duration) => {
         playAudioTone('success');
         const isAlreadyComplete = currentDayLog.completed && currentDayLog.chosen === chosenTier;
+        const details = chosenTier.includes('Option 1') ? currentRoutine.opt1 
+                      : chosenTier.includes('Option 2') ? currentRoutine.opt2 
+                      : chosenTier.includes('Option 3') ? currentRoutine.opt3 
+                      : chosenTier;
+
         const newLog = {
           ...currentDayLog,
           date: dateKey,
           chosen: isAlreadyComplete ? '' : chosenTier,
+          activityDetails: isAlreadyComplete ? '' : details,
           completed: !isAlreadyComplete,
           minutes: duration || currentDayLog.minutes || 15,
           timestamp: new Date().toISOString()
@@ -534,12 +561,6 @@
 
         setLogs((prev) => ({ ...prev, [dateKey]: newLog }));
         dispatchPostToSheet(newLog);
-
-        if (!isAlreadyComplete) {
-          showNotification(`Logged: ${chosenTier}`, 'success');
-        } else {
-          showNotification('Marked incomplete', 'info');
-        }
       };
 
       const handleCustomLog = (text) => {
@@ -549,6 +570,7 @@
           ...currentDayLog,
           date: dateKey,
           chosen: `Option 4: ${customName}`,
+          activityDetails: customName,
           customText: customName,
           completed: true,
           minutes: currentDayLog.minutes || 15,
@@ -556,7 +578,6 @@
         };
         setLogs((prev) => ({ ...prev, [dateKey]: newLog }));
         dispatchPostToSheet(newLog);
-        showNotification(`Logged: ${customName}`, 'success');
       };
 
       return (
@@ -641,7 +662,7 @@
             </div>
           </section>
 
-          {/* Date Navigator */}
+          {/* Date Navigator & Today Button */}
           <div className="flex items-center justify-between bg-space-900 rounded-xl p-3 border border-space-800 mb-3">
             <button onClick={() => {
               const d = new Date(currentDate);
@@ -652,9 +673,15 @@
               <i className="fa-solid fa-chevron-left text-xs"></i>
             </button>
 
-            <div className="text-center">
-              <div className="font-bold text-sm text-white">
-                {currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            <div className="text-center cursor-pointer" onClick={() => {
+              const d = new Date();
+              d.setHours(0,0,0,0);
+              setCurrentDate(d);
+              playAudioTone('tap');
+            }}>
+              <div className="font-bold text-sm text-white flex items-center justify-center gap-1.5">
+                <span>{currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-space-800 text-space-glow border border-space-700">Today</span>
               </div>
               <div className="text-[10px] text-space-gold font-mono">Day {dayNum} • {currentRoutine.focus}</div>
             </div>
